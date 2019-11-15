@@ -1,0 +1,18 @@
+{
+	"CONFIG" : {
+		"BOUNCETIME" : 0.05,
+		"GPIO_PIN_SENSOR" : 4,
+		"H_RAIN" : 0,
+		"RESOLUTION_PER_PULSE" : 0.254,
+		"SAMPLETIME" : 5,
+		"SAMPLETIME_UNIT" : "minutes"
+	},
+
+	"DATABASE" : {
+		"host": "",
+		"database": "",
+		"user": "",
+		"password": "",
+		"table_name": ""
+	}	
+}
