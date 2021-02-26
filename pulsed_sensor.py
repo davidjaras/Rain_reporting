@@ -13,7 +13,8 @@ import multiprocessing
 import os
 import settings
 import json
-import datetime
+from datetime import datetime
+import sampling_time
 
 
 def monitorchannel(channel, bouncetime, counter):
@@ -32,6 +33,29 @@ def monitorchannel(channel, bouncetime, counter):
                 pass
             last_edge = current_edge
         time.sleep(bouncetime/10)
+
+
+def sample_calculation(sampletime, scaletime):
+
+    while True:
+        now = sampling_time.delay_to_take_sample(sampletime, scaletime)
+        print("Time to measure: " + datetime.strftime(now,'%Y-%m-%d %H:%M:%S'))
+
+
+def speed_calculation(sampletime, counter, f, values, newdata):
+
+    while True:
+        #time.sleep(sampletime)
+        scaletime = 'minutes'
+        if scaletime == 'minutes':
+            T_wind = sampletime * 60
+        else:
+            T_wind = sampletime
+        sampling_time.delay(sampletime,scaletime)
+        newdata[index] = 1
+        newdata[index+2] = 1
+        values[index] = f(counters[index],T_wind)
+        counters[index] = 0
 
 
 if __name__ == "__main__":
@@ -54,7 +78,7 @@ if __name__ == "__main__":
     print(bouncetime_sensor)
     
     counter = multiprocessing.Value('d', 0.0)
-    #values = multiprocessing.Array('d',[0]*2)
+    #value = multiprocessing.Array('d',[0]*2)
     #newdata = multiprocessing.Array('i',[0]*4)
     
     # Process to monitor pulsed input
@@ -63,3 +87,9 @@ if __name__ == "__main__":
                                                     bouncetime_sensor,
                                                     counter))
     monitor_process.start()
+    
+    # Processes to scale pulses into physical variables    
+    p4 = multiprocessing.Process(target = sample_calculation,
+                                 args = (CONFIG['SAMPLETIME'],
+                                         CONFIG['SAMPLETIME_UNIT']))
+    p4.start()
