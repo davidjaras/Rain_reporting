@@ -3,9 +3,9 @@
 		"BOUNCETIME" : 0.05,
 		"GPIO_PIN_SENSOR" : 4,
 		"H_RAIN" : 0,
-		"RESOLUTION_PER_PULSE" : 0.254,
-		"SAMPLETIME" : 2,
-		"SAMPLETIME_UNIT" : "minutes"
+		"CONVERION_FACTOR" : 0.254,
+		"SAMPLETIME" : 10,
+		"SAMPLETIME_UNIT" : "seconds"
 	},
 
 	"DATABASE" : {

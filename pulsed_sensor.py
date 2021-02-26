@@ -17,7 +17,7 @@ from datetime import datetime
 import sampling_time
 
 
-def monitorchannel(channel, bouncetime, counter):
+def monitor_channel(channel, bouncetime, counter):
     '''
     Function used in a multiprocessing thread to count pulses
     detected in a specified GPIO port stablished in setting.json file
@@ -35,27 +35,14 @@ def monitorchannel(channel, bouncetime, counter):
         time.sleep(bouncetime/10)
 
 
-def sample_calculation(sampletime, scaletime):
+def get_sample(sampletime, scaletime, cf, is_new_data, counter, sample):
 
     while True:
         now = sampling_time.delay_to_take_sample(sampletime, scaletime)
         print("Time to measure: " + datetime.strftime(now,'%Y-%m-%d %H:%M:%S'))
-
-
-def speed_calculation(sampletime, counter, f, values, newdata):
-
-    while True:
-        #time.sleep(sampletime)
-        scaletime = 'minutes'
-        if scaletime == 'minutes':
-            T_wind = sampletime * 60
-        else:
-            T_wind = sampletime
-        sampling_time.delay(sampletime,scaletime)
-        newdata[index] = 1
-        newdata[index+2] = 1
-        values[index] = f(counters[index],T_wind)
-        counters[index] = 0
+        is_new_data.value = 1
+        sample.value = counter.value*cf
+        counter.value = 0
 
 
 if __name__ == "__main__":
@@ -68,28 +55,27 @@ if __name__ == "__main__":
     # Setup pin configuration
     pin_sensor = CONFIG['GPIO_PIN_SENSOR'] # select GPIO pin
     bouncetime_sensor = CONFIG['BOUNCETIME'] # avoid parasites pulses
-    resolution = CONFIG['RESOLUTION_PER_PULSE'] # physical pulse unit
     GPIO.setmode(GPIO.BCM)
     GPIO.setup(pin_sensor, GPIO.IN)
     
-    print('Pin sensor: ')
-    print(pin_sensor)
-    print('bouncetime_sensor: ')
-    print(bouncetime_sensor)
-    
+    # Setup global multiprocessing variables
     counter = multiprocessing.Value('d', 0.0)
-    #value = multiprocessing.Array('d',[0]*2)
-    #newdata = multiprocessing.Array('i',[0]*4)
+    is_new_data = multiprocessing.Value('b', 0)
+    sample = multiprocessing.Value('d', 0.0)
     
     # Process to monitor pulsed input
-    monitor_process = multiprocessing.Process(target = monitorchannel,
+    monitor_ps = multiprocessing.Process(target = monitor_channel,
                                             args = (pin_sensor,
                                                     bouncetime_sensor,
                                                     counter))
-    monitor_process.start()
+    monitor_ps.start()
     
-    # Processes to scale pulses into physical variables    
-    p4 = multiprocessing.Process(target = sample_calculation,
-                                 args = (CONFIG['SAMPLETIME'],
-                                         CONFIG['SAMPLETIME_UNIT']))
-    p4.start()
+    # Process to scale pulses into physical variables    
+    sample_ps = multiprocessing.Process(target = get_sample,
+                                        args = (CONFIG['SAMPLETIME'],
+                                                CONFIG['SAMPLETIME_UNIT'],
+                                                CONFIG['CONVERION_FACTOR'],
+                                                is_new_data,
+                                                counter,
+                                                sample))
+    sample_ps.start()
