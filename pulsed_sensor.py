@@ -16,7 +16,7 @@ import json
 import datetime
 
 
-def monitorchannel(channel, bouncetime, counters):
+def monitorchannel(channel, bouncetime, counter):
     '''
     Function used in a multiprocessing thread to count pulses
     detected in a specified GPIO port stablished in setting.json file
@@ -26,8 +26,8 @@ def monitorchannel(channel, bouncetime, counters):
         if  GPIO.input(channel):
             current_edge = time.time()
             if current_edge - last_edge > bouncetime:
-                counters[0] +=1
-                print('Counter pulses: %s' % counters[0])
+                counter.value += 1
+                print('Counter pulses: %s' % counter.value)
             else:
                 pass
             last_edge = current_edge
@@ -53,14 +53,13 @@ if __name__ == "__main__":
     print('bouncetime_sensor: ')
     print(bouncetime_sensor)
     
-    counters = multiprocessing.Array('d',[0]*2)
+    counter = multiprocessing.Value('d', 0.0)
     #values = multiprocessing.Array('d',[0]*2)
     #newdata = multiprocessing.Array('i',[0]*4)
     
-    # Processes to monitor pulsed input
+    # Process to monitor pulsed input
     monitor_process = multiprocessing.Process(target = monitorchannel,
                                             args = (pin_sensor,
                                                     bouncetime_sensor,
-                                                    counters))
+                                                    counter))
     monitor_process.start()
-        
