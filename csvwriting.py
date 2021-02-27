@@ -9,7 +9,7 @@ import datetime
 from pathlib import Path
 
 
-def verify_duplications(filename,data):
+def verify_duplications(filename, data):
     '''
     Validate if the data to save was not saved before.
     '''
@@ -21,10 +21,10 @@ def verify_duplications(filename,data):
     else:
         path = open(filename, 'r')
         file_list = ((path.read()).split('\n'))
-        matched_data = ';'.join(map(str,data))
+        matched_data = ';'.join(map(str, data))
         if matched_data in file_list:
             duplicates_found = True
-    return duplicates_found   
+    return duplicates_found
 
 
 def write_file(filename, header, data):
@@ -34,15 +34,15 @@ def write_file(filename, header, data):
     try:
         my_file = Path(filename)
         if not my_file.is_file():
-            path = open(filename, 'a',newline='\n')
-            writer = csv.writer(path,delimiter=';')
+            path = open(filename, 'a', newline='\n')
+            writer = csv.writer(path, delimiter=';')
             writer.writerow(header)
         else:
             path = open(filename, 'a')
-            writer = csv.writer(path,delimiter=';')
-            
+            writer = csv.writer(path, delimiter=';')
+
         writer.writerow(data)
-        path.close()            
+        path.close()
         data_written = True
     except Exception as e:
         print("Something happend while trying to save in csv file: ")

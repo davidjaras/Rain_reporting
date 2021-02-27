@@ -20,18 +20,18 @@ def connect_database(credentials):
     host = credentials['host']
     port = credentials['port']
     database = credentials['database']
-    user = credentials ['user']
+    user = credentials['user']
     password = credentials['password']
     table_name = credentials['table_name']
-    
+
     connected = False
-    print("The port is: %s" %port)
+    print("The port is: %s" % port)
     try:
-        connection = mysql.connect(user = user,
-                                   password = password,
-                                   host = host,
-                                   database = database,
-                                   port = port)
+        connection = mysql.connect(user=user,
+                                   password=password,
+                                   host=host,
+                                   database=database,
+                                   port=port)
         connected = True
 
     except Exception as e:
@@ -39,10 +39,10 @@ def connect_database(credentials):
         time.sleep(1)
         connected = False
         connection.close()
-        
+
     return connection, connected
 
-    
+
 def write_into_database(connection, table, data):
     '''
     Get established connection with database to insert data.
@@ -50,10 +50,10 @@ def write_into_database(connection, table, data):
     '''
     success = False
     cursor = connection.cursor()
-    
+
     fields = '('
     values = '('
-    
+
     for field, value in data.items():
         fields += ''+field+', '
         if isinstance(value, str):
@@ -65,10 +65,10 @@ def write_into_database(connection, table, data):
     # iteration from the for cicle above.
     fields = fields[:-2]+')'
     values = values[:-2]+')'
-    
+
     sentence = ('INSERT INTO '+table+' '+fields+' VALUES '+values+';')
 
-    print(sentence)    
+    print(sentence)
 
     try:
         cursor.execute(sentence)
@@ -79,7 +79,7 @@ def write_into_database(connection, table, data):
         print(e)
 
     return success
-    
+
 
 if __name__ == '__main__':
-   pass
+    pass
