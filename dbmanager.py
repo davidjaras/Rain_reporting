@@ -1,3 +1,11 @@
+'''
+
+dbmanager.py
+
+Sets connection with database and data inserts.
+This file work with MySQL databases.
+
+'''
 import mysql.connector as mysql
 import time
 import datetime
@@ -5,7 +13,10 @@ import os
 
 
 def connect_database(credentials):
-    
+    '''
+    Get database params and establish connection.
+    If there is not connection throw exception.
+    '''
     host = credentials['host']
     port = credentials['port']
     database = credentials['database']
@@ -13,7 +24,6 @@ def connect_database(credentials):
     password = credentials['password']
     table_name = credentials['table_name']
     
-    global connection
     connected = False
     print("The port is: %s" %port)
     try:
@@ -34,6 +44,10 @@ def connect_database(credentials):
 
     
 def write_into_database(connection, table, data):
+    '''
+    Get established connection with database to insert data.
+    Throw exception if something fails.
+    '''
     success = False
     cursor = connection.cursor()
     
@@ -47,7 +61,6 @@ def write_into_database(connection, table, data):
         else:
             values += str(value)+', '
 
-    
     # number -2 is for the length of the comma and space <', '> at last
     # iteration from the for cicle above.
     fields = fields[:-2]+')'
@@ -66,7 +79,6 @@ def write_into_database(connection, table, data):
         print(e)
 
     return success
-
     
 
 if __name__ == '__main__':

@@ -7,6 +7,7 @@ specified time and save in database mysql and in a local directory.
 
 '''
 
+# Python Core Libraries
 import RPi.GPIO as GPIO
 import time
 import multiprocessing
@@ -14,9 +15,17 @@ import os
 import settings
 import json
 from datetime import datetime
+
+# Project modules
 import sampling_time
 import dbmanager
 import csvwriting
+
+
+def get_now_time():
+    ''' Return actual time in string format. '''
+    now = datetime.strftime(datetime.now(),'%Y-%m-%d %H:%M:%S')
+    return now
 
 
 def monitor_channel(channel, bouncetime, counter):
@@ -37,8 +46,12 @@ def monitor_channel(channel, bouncetime, counter):
         time.sleep(bouncetime/10)
 
 
-def get_sample(CONFIG, is_new_data_to_send, is_new_data_to_save, counter, sample):
-    
+def get_sample(CONFIG, is_new_data_send, is_new_data_save, counter, sample):
+    '''
+    Function that according the params in CONFIG check time
+    to take sample and enables the flags is_new_data
+    to indicate the other processes that can read sample and go on.
+    '''
     sampletime = CONFIG['SAMPLETIME']
     scaletime = CONFIG['SAMPLETIME_UNIT']
     conversion_factor = CONFIG['CONVERSION_FACTOR']
@@ -46,14 +59,18 @@ def get_sample(CONFIG, is_new_data_to_send, is_new_data_to_save, counter, sample
     while True:
         now = sampling_time.delay_to_take_sample(sampletime, scaletime)
         print("Time to measure: " + datetime.strftime(now,'%Y-%m-%d %H:%M:%S'))
-        is_new_data_to_send.value = 1
-        is_new_data_to_save.value = 1
+        is_new_data_send.value = 1
+        is_new_data_save.value = 1
         sample.value = counter.value*conversion_factor
         counter.value = 0
 
 
 def format_data(credentials, sample):
-    date_time = datetime.strftime(datetime.now(),'%Y-%m-%d %H:%M:%S')
+    '''
+    Create a data dictionary with keys called like columns in 
+    database according to setup
+    '''
+    date_time = get_now_time()
     data = {
         credentials['table_field_datetime'] : date_time,
         credentials['table_field_sample'] : sample.value
@@ -61,12 +78,16 @@ def format_data(credentials, sample):
     return data
     
 
-def send_to_database(credentials, is_new_data_to_send, sample):
+def send_to_database(credentials, is_new_data_send, sample):
+    '''
+    Function checks if flag to send measure a database is active, 
+    set connection and make insert of the data
+    '''
     while True:
         time.sleep(0.1)
         try:
-            if is_new_data_to_send.value:
-                is_new_data_to_send.value = 0
+            if is_new_data_send.value:
+                is_new_data_send.value = 0
                 data = format_data(credentials, sample)
                 print('Starting connection to database...')
                 connection, connected = dbmanager.connect_database(
@@ -88,19 +109,33 @@ def send_to_database(credentials, is_new_data_to_send, sample):
             print(e)
 
 
-def save_in_local_storage(table_name, is_new_data_to_save, sample):
+def save_in_local_storage(path, table_name, is_new_data_save, sample):
+    '''
+    Function checks if flag to save measure in local csv files is 
+    active, validate duplicates entries and save data
+    '''
     while True:
         time.sleep(0.1)
         try:
-            if is_new_data_to_save.value:
-                is_new_data_to_save.value = 0
-                today_date = datetime.strftime(datetime.now(),'%Y-%m-%d')
-                today_time = datetime.strftime(datetime.now(),'%H:%M:%S')
-                today = today_date + ' ' + today_time
-                filename = table_name+'_'+today_date+'.csv'
+            if is_new_data_save.value:
+                is_new_data_save.value = 0
                 
-                if not csvwriting.verifyDuplications('/home/pi/datalogger/'+filename,[today, sample.value]):
-                    csvwriting.writeFile('/home/pi/datalogger/'+filename, ['Date_Time','muestra'], [today, sample.value])
+                today = get_now_time()
+                today_date = today.split(' ')[0]
+                filename = table_name+'_'+today_date+'.csv'
+                path_filename = path+filename
+                
+                duplicates = csvwriting.verify_duplications(
+                                    path_filename,
+                                    [today, sample.value]
+                                    )
+                
+                if not duplicates:
+                    csvwriting.write_file(
+                                path_filename,
+                                ['Date_Time','muestra'],
+                                [today, sample.value]
+                                )
                 
         except Exception as e:
             print('File was not written because this exception was thrown:')
@@ -109,10 +144,11 @@ def save_in_local_storage(table_name, is_new_data_to_save, sample):
 
 if __name__ == "__main__":
     
-    # Open Settings in variable 'S'
+    # Open Settings in variable 'S'. Set CONFIG and DATABASE variables
     S = settings.read_json('settings.json')
     CONFIG = S['CONFIG']
     DATABASE = S['DATABASE']
+    PATH = S['LOCAL_STORAGE_PATH']
 
     # Setup pin configuration
     pin_sensor = CONFIG['GPIO_PIN_SENSOR'] # select GPIO pin
@@ -121,10 +157,10 @@ if __name__ == "__main__":
     GPIO.setup(pin_sensor, GPIO.IN)
     
     # Setup global multiprocessing variables
-    counter = multiprocessing.Value('d', 0.0)
-    is_new_data_to_send = multiprocessing.Value('b', 0)
-    is_new_data_to_save = multiprocessing.Value('b', 0)
-    sample = multiprocessing.Value('d', 0.0)
+    counter = multiprocessing.Value('d', 0.0) # pulses counter
+    is_new_data_send = multiprocessing.Value('b', 0) # db flag
+    is_new_data_save = multiprocessing.Value('b', 0) # csv flag
+    sample = multiprocessing.Value('d', 0.0) # phisical measure
     
     # Process to monitor pulsed input
     monitor_ps = multiprocessing.Process(target = monitor_channel,
@@ -136,8 +172,8 @@ if __name__ == "__main__":
     # Process that manage time and take a sample from counter
     sample_ps = multiprocessing.Process(target = get_sample,
                                         args = (CONFIG,
-                                                is_new_data_to_send,
-                                                is_new_data_to_save,
+                                                is_new_data_send,
+                                                is_new_data_save,
                                                 counter,
                                                 sample))
     sample_ps.start()
@@ -145,15 +181,16 @@ if __name__ == "__main__":
     # Processes to write into database
     database_ps = multiprocessing.Process(target = send_to_database,
                                       args = (DATABASE,
-                                              is_new_data_to_send,
+                                              is_new_data_send,
                                               sample))
     database_ps.start()
     
     # Process to write into file. Local Storage
     save_local_ps = multiprocessing.Process(target = save_in_local_storage,
                                  args = (
+                                 PATH,
                                  DATABASE['table_name'],
-                                 is_new_data_to_save,
+                                 is_new_data_save,
                                  sample))
 
     save_local_ps.start()

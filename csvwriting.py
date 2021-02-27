@@ -1,4 +1,6 @@
 '''
+csvwriting.csv
+
 File that manages the local storage through csv files.
 '''
 import csv
@@ -7,8 +9,10 @@ import datetime
 from pathlib import Path
 
 
-def verifyDuplications(filename,data):
-
+def verify_duplications(filename,data):
+    '''
+    Validate if the data to save was not saved before.
+    '''
     duplicates_found = False
     my_file = Path(filename)
 
@@ -23,7 +27,10 @@ def verifyDuplications(filename,data):
     return duplicates_found   
 
 
-def writeFile(filename, header, data):
+def write_file(filename, header, data):
+    '''
+    Save data in specified filename-path.
+    '''
     try:
         my_file = Path(filename)
         if not my_file.is_file():
@@ -38,7 +45,8 @@ def writeFile(filename, header, data):
         path.close()            
         data_written = True
     except Exception as e:
-        logging.exception(e)
+        print("Something happend while trying to save in csv file: ")
+        print(e)
         data_written = False
 
     return data_written

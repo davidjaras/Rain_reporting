@@ -16,5 +16,7 @@
 		"table_name": "",
 		"table_field_datetime": "",
 		"table_field_sample": ""
-	}	
+	},
+	
+	"LOCAL_STORAGE_PATH" : "/home/pi/datalogger/"
 }
