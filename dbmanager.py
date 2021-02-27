@@ -4,9 +4,6 @@ import datetime
 import os
 
 
-import random
-
-
 def connect_database(credentials):
     
     host = credentials['host']
@@ -73,32 +70,4 @@ def write_into_database(connection, table, data):
     
 
 if __name__ == '__main__':
-    
-    DATABASE = {
-		"host": "",
-		"port": ,
-		"database": "",
-		"user": "",
-		"password": "",
-		"table_name": "",
-		"table_fields": ['date_estacion', 'muestra']
-	}
-    
-    muestra = random.randint(0,10)*0.254
-    date_time = datetime.datetime.strftime(datetime.datetime.now(),'%Y-%m-%d %H:%M:%S')
-    mock_data = {
-        'muestra': muestra,
-        'date_estacion': date_time
-    }
-    
-    print(mock_data)
-    
-
-    try: 
-        connection, connected = connect_database(DATABASE)
-        write_into_database(connection, DATABASE['table_name'], mock_data)
-    except Exception as e:
-        print(e)
-    
-    connection.close()
-
+   pass

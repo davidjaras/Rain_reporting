@@ -15,6 +15,8 @@ import settings
 import json
 from datetime import datetime
 import sampling_time
+import dbmanager
+import csvwriting
 
 
 def monitor_channel(channel, bouncetime, counter):
@@ -35,80 +37,74 @@ def monitor_channel(channel, bouncetime, counter):
         time.sleep(bouncetime/10)
 
 
-def get_sample(sampletime, scaletime, cf, is_new_data, counter, sample):
+def get_sample(CONFIG, is_new_data_to_send, is_new_data_to_save, counter, sample):
+    
+    sampletime = CONFIG['SAMPLETIME']
+    scaletime = CONFIG['SAMPLETIME_UNIT']
+    conversion_factor = CONFIG['CONVERSION_FACTOR']
 
     while True:
         now = sampling_time.delay_to_take_sample(sampletime, scaletime)
         print("Time to measure: " + datetime.strftime(now,'%Y-%m-%d %H:%M:%S'))
-        is_new_data.value = 1
-        sample.value = counter.value*cf
+        is_new_data_to_send.value = 1
+        is_new_data_to_save.value = 1
+        sample.value = counter.value*conversion_factor
         counter.value = 0
 
 
-def send_to_database(database_credentials, is_new_data, sample):
+def format_data(credentials, sample):
+    date_time = datetime.strftime(datetime.now(),'%Y-%m-%d %H:%M:%S')
+    data = {
+        credentials['table_field_datetime'] : date_time,
+        credentials['table_field_sample'] : sample.value
+    }
+    return data
+    
+
+def send_to_database(credentials, is_new_data_to_send, sample):
     while True:
         time.sleep(0.1)
-        if is_new_data.value:
-            is_new_data.value = 0
-            print("Starting process to send a database MySQL")
-        
-
-
-def write_database(values,index,newdata,credentials):
-    
-    host = credentials['host']
-    database = credentials['database']
-    user = credentials ['user']
-    password = credentials['password']
-    table_name = credentials['table_name']
-    
-    table = ['rain', 'wind']
-    while True:
-        time.sleep(0.001)
         try:
-            if newdata[index] == 1:
-                newdata[index]=0
-
-                today = datetime.datetime.strftime(datetime.datetime.now(),'%Y-%m-%d')
-                now = datetime.datetime.strftime(datetime.datetime.now(),'%H:%M:%S')
-
+            if is_new_data_to_send.value:
+                is_new_data_to_send.value = 0
+                data = format_data(credentials, sample)
                 print('Starting connection to database...')
-                connection, connected = dbmanager.connect_database(user, password,
-                                                         host, database,3307)
+                connection, connected = dbmanager.connect_database(
+                                                        credentials
+                                                        )
                 print('Connection to database successful.')
-        
-##         
-                success = dbmanager.write_from_csv(connection,
-                                                   '/home/pi/datalogger/backup_'+table[index]+'.csv',
-                                                   table_name+'_'+table[index])
-                print('Writing backup file...' + str(success))
-
-##                if not dbmanager.check_duplicates(connection, table_name+'_'+table[index],[today, now, values[index]]):
-                    
-                success = dbmanager.write_into_database(connection, table_name+'_'+table[index],
-                                                        [today, now, values[index]])
+                print(data)
+                success = dbmanager.write_into_database(
+                                            connection,
+                                            credentials['table_name'],
+                                            data        
+                                            )
                 print('Insert operation was successful.')
-##                else:
-##                    print('The row has been written already in the database')
-##                    success = True
                 connection.close()
+                
         except Exception as e:
-            logging.exception(e)
             print('Insert operation into database was not performed'
                   ' due to this exception was thrown:')
             print(e)
-            print('Backup file: /home/pi/datalogger/backup_'+table[index]+'.csv')
-            if not csvwriting.verifyDuplications('/home/pi/datalogger/backup_'+table[index]+'.csv', [today,now, values[index]]):
-                try:
-                    csvwriting.writeFile('/home/pi/datalogger/backup_'+table[index]+'.csv',
-                                         ['Date','Time',table[index]], [today, now, values[index]])
-                    print('New data was registered in backup file. When connection'
-                          'to database is restarted, data will be written from csv.')
-                except Exception as e:
-                    print(e)
+
+
+def save_in_local_storage(table_name, is_new_data_to_save, sample):
+    while True:
+        time.sleep(0.1)
+        try:
+            if is_new_data_to_save.value:
+                is_new_data_to_save.value = 0
+                today_date = datetime.strftime(datetime.now(),'%Y-%m-%d')
+                today_time = datetime.strftime(datetime.now(),'%H:%M:%S')
+                today = today_date + ' ' + today_time
+                filename = table_name+'_'+today_date+'.csv'
                 
-            else:
-                print('Data is already registered in backup file. No new rows were registered.')
+                if not csvwriting.verifyDuplications('/home/pi/datalogger/'+filename,[today, sample.value]):
+                    csvwriting.writeFile('/home/pi/datalogger/'+filename, ['Date_Time','muestra'], [today, sample.value])
+                
+        except Exception as e:
+            print('File was not written because this exception was thrown:')
+            print(e)
 
 
 if __name__ == "__main__":
@@ -126,7 +122,8 @@ if __name__ == "__main__":
     
     # Setup global multiprocessing variables
     counter = multiprocessing.Value('d', 0.0)
-    is_new_data = multiprocessing.Value('b', 0)
+    is_new_data_to_send = multiprocessing.Value('b', 0)
+    is_new_data_to_save = multiprocessing.Value('b', 0)
     sample = multiprocessing.Value('d', 0.0)
     
     # Process to monitor pulsed input
@@ -138,17 +135,25 @@ if __name__ == "__main__":
     
     # Process that manage time and take a sample from counter
     sample_ps = multiprocessing.Process(target = get_sample,
-                                        args = (CONFIG['SAMPLETIME'],
-                                                CONFIG['SAMPLETIME_UNIT'],
-                                                CONFIG['CONVERION_FACTOR'],
-                                                is_new_data,
+                                        args = (CONFIG,
+                                                is_new_data_to_send,
+                                                is_new_data_to_save,
                                                 counter,
                                                 sample))
     sample_ps.start()
     
     # Processes to write into database
-    send_ps = multiprocessing.Process(target = send_to_database,
+    database_ps = multiprocessing.Process(target = send_to_database,
                                       args = (DATABASE,
-                                              is_new_data,
+                                              is_new_data_to_send,
                                               sample))
-    send_ps.start()
+    database_ps.start()
+    
+    # Process to write into file. Local Storage
+    save_local_ps = multiprocessing.Process(target = save_in_local_storage,
+                                 args = (
+                                 DATABASE['table_name'],
+                                 is_new_data_to_save,
+                                 sample))
+
+    save_local_ps.start()

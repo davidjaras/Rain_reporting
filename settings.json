@@ -2,19 +2,19 @@
 	"CONFIG" : {
 		"BOUNCETIME" : 0.05,
 		"GPIO_PIN_SENSOR" : 4,
-		"H_RAIN" : 0,
-		"CONVERION_FACTOR" : 0.254,
-		"SAMPLETIME" : 10,
+		"CONVERSION_FACTOR" : 0.254,
+		"SAMPLETIME" : 15,
 		"SAMPLETIME_UNIT" : "seconds"
 	},
 
 	"DATABASE" : {
 		"host": "",
-		"port": "",
+		"port": ,
 		"database": "",
 		"user": "",
 		"password": "",
 		"table_name": "",
-		"table_fields": []
+		"table_field_datetime": "",
+		"table_field_sample": ""
 	}	
 }
