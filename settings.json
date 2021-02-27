@@ -10,9 +10,11 @@
 
 	"DATABASE" : {
 		"host": "",
+		"port": "",
 		"database": "",
 		"user": "",
 		"password": "",
-		"table_name": ""
+		"table_name": "",
+		"table_fields": []
 	}	
 }

@@ -45,6 +45,72 @@ def get_sample(sampletime, scaletime, cf, is_new_data, counter, sample):
         counter.value = 0
 
 
+def send_to_database(database_credentials, is_new_data, sample):
+    while True:
+        time.sleep(0.1)
+        if is_new_data.value:
+            is_new_data.value = 0
+            print("Starting process to send a database MySQL")
+        
+
+
+def write_database(values,index,newdata,credentials):
+    
+    host = credentials['host']
+    database = credentials['database']
+    user = credentials ['user']
+    password = credentials['password']
+    table_name = credentials['table_name']
+    
+    table = ['rain', 'wind']
+    while True:
+        time.sleep(0.001)
+        try:
+            if newdata[index] == 1:
+                newdata[index]=0
+
+                today = datetime.datetime.strftime(datetime.datetime.now(),'%Y-%m-%d')
+                now = datetime.datetime.strftime(datetime.datetime.now(),'%H:%M:%S')
+
+                print('Starting connection to database...')
+                connection, connected = dbmanager.connect_database(user, password,
+                                                         host, database,3307)
+                print('Connection to database successful.')
+        
+##         
+                success = dbmanager.write_from_csv(connection,
+                                                   '/home/pi/datalogger/backup_'+table[index]+'.csv',
+                                                   table_name+'_'+table[index])
+                print('Writing backup file...' + str(success))
+
+##                if not dbmanager.check_duplicates(connection, table_name+'_'+table[index],[today, now, values[index]]):
+                    
+                success = dbmanager.write_into_database(connection, table_name+'_'+table[index],
+                                                        [today, now, values[index]])
+                print('Insert operation was successful.')
+##                else:
+##                    print('The row has been written already in the database')
+##                    success = True
+                connection.close()
+        except Exception as e:
+            logging.exception(e)
+            print('Insert operation into database was not performed'
+                  ' due to this exception was thrown:')
+            print(e)
+            print('Backup file: /home/pi/datalogger/backup_'+table[index]+'.csv')
+            if not csvwriting.verifyDuplications('/home/pi/datalogger/backup_'+table[index]+'.csv', [today,now, values[index]]):
+                try:
+                    csvwriting.writeFile('/home/pi/datalogger/backup_'+table[index]+'.csv',
+                                         ['Date','Time',table[index]], [today, now, values[index]])
+                    print('New data was registered in backup file. When connection'
+                          'to database is restarted, data will be written from csv.')
+                except Exception as e:
+                    print(e)
+                
+            else:
+                print('Data is already registered in backup file. No new rows were registered.')
+
+
 if __name__ == "__main__":
     
     # Open Settings in variable 'S'
@@ -70,7 +136,7 @@ if __name__ == "__main__":
                                                     counter))
     monitor_ps.start()
     
-    # Process to scale pulses into physical variables    
+    # Process that manage time and take a sample from counter
     sample_ps = multiprocessing.Process(target = get_sample,
                                         args = (CONFIG['SAMPLETIME'],
                                                 CONFIG['SAMPLETIME_UNIT'],
@@ -79,3 +145,10 @@ if __name__ == "__main__":
                                                 counter,
                                                 sample))
     sample_ps.start()
+    
+    # Processes to write into database
+    send_ps = multiprocessing.Process(target = send_to_database,
+                                      args = (DATABASE,
+                                              is_new_data,
+                                              sample))
+    send_ps.start()
