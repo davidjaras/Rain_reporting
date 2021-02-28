@@ -9,7 +9,7 @@
 
 	"DATABASE" : {
 		"host": "",
-		"port": ,
+		"port": "",
 		"database": "",
 		"user": "",
 		"password": "",
