@@ -22,7 +22,7 @@ import dbmanager
 import csvwriting
 
 
-def get_now_time():
+def get_current_time():
     ''' Return actual time in string format. '''
     now = datetime.strftime(datetime.now(), '%Y-%m-%d %H:%M:%S')
     return now
@@ -70,10 +70,10 @@ def format_data(credentials, sample):
     Create a data dictionary with keys called like columns in
     database according to setup
     '''
-    date_time = get_now_time()
+    date_time = get_current_time()
     data = {
         credentials['table_field_datetime']: date_time,
-        credentials['table_field_sample']: sample.value
+        credentials['table_field_sample']: sample
     }
     return data
 
@@ -88,7 +88,7 @@ def send_to_database(credentials, is_new_data_send, sample):
         try:
             if is_new_data_send.value:
                 is_new_data_send.value = 0
-                data = format_data(credentials, sample)
+                data = format_data(credentials, sample.value)
                 print('Starting connection to database...')
                 connection, connected = dbmanager.connect_database(
                                                         credentials
@@ -120,7 +120,7 @@ def save_in_local_storage(path, table_name, is_new_data_save, sample):
             if is_new_data_save.value:
                 is_new_data_save.value = 0
 
-                today = get_now_time()
+                today = get_current_time()
                 today_date = today.split(' ')[0]
                 filename = table_name+'_'+today_date+'.csv'
                 path_filename = path+filename

@@ -16,6 +16,7 @@ def read_json(filename):
     except Exception as e:
         return e
 
+
 if __name__ == '__main__':
 
     settings = read_json('')

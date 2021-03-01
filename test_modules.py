@@ -29,7 +29,21 @@ class TestDBManager(unittest.TestCase):
 
 
 class TestPulsedSensor(unittest.TestCase):
-    pass
+    '''
+    Class that test pulsed_sensor module.
+    '''
+
+    '''
+    Following methods are test cases to the function get_current_time()
+    '''
+    def test_get_current_time(self):
+        self.assertIsInstance(pulsed_sensor.get_current_time(), str)
+
+    '''
+    Following methods are test cases to the function get_current_time()
+    '''
+    def test_get_current_time(self):
+        self.assertIsInstance(pulsed_sensor.get_current_time(), str)
 
 
 class TestSamplingTime(unittest.TestCase):
@@ -47,7 +61,7 @@ class TestSamplingTime(unittest.TestCase):
         datetime_object, boolean = sampling_time.time_to_take_sample()
         self.assertIsInstance(datetime_object, datetime.datetime)
         self.assertIsInstance(boolean, bool)
-    
+
     # Given sampletime_unit different of minutes or seconds,
     # set default value: sampletime_unit = 'minutes';
     # Must return datetime object and a boolean
@@ -70,14 +84,14 @@ class TestSamplingTime(unittest.TestCase):
                 )
             self.assertIsInstance(datetime_object, datetime.datetime)
             self.assertIsInstance(boolean, bool)
-    
+
     # Given correct sampletime, sampletime_unit,
     # And these matches with a current time
     # Must return datetime object and a True boolean
     def test_return_true(self):
         cases = ['seconds', 'minutes']
         for case in cases:
-            sampletime = random.randint(1, 59)  # set random value to min - sec 
+            sampletime = random.randint(1, 59)  # set random value to min - sec
             now = datetime.datetime.now()  # get other time values
             date_time_test = datetime.datetime(  # set datetime for test
                                                 year=now.year,
@@ -97,14 +111,14 @@ class TestSamplingTime(unittest.TestCase):
             self.assertIsInstance(datetime_object, datetime.datetime)
             self.assertIsInstance(boolean, bool)
             self.assertTrue(boolean)
-    
+
     # Given correct sampletime, sampletime_unit,
     # And these doesn't matches with a current time
     # Must return datetime object and a False boolean
     def test_return_false(self):
         cases = ['seconds', 'minutes']
         for case in cases:
-            sampletime = 13  # set random value to min - sec 
+            sampletime = 13  # set random value to min - sec
             now = datetime.datetime.now()  # get other time values
             date_time_test = datetime.datetime(  # set datetime for test
                                                 year=now.year,
@@ -124,10 +138,6 @@ class TestSamplingTime(unittest.TestCase):
             self.assertIsInstance(datetime_object, datetime.datetime)
             self.assertIsInstance(boolean, bool)
             self.assertFalse(boolean)
-    
-    '''
-    Following methods are test cases to the function calibrate_minute()
-    '''
 
 
 class TestSettings(unittest.TestCase):
@@ -141,7 +151,7 @@ class TestSettings(unittest.TestCase):
     # Given a correct filename return a json object
     def test_read_json(self):
         self.assertIsInstance(settings.read_json('settings.json'), dict)
-    
+
     # Given a wrong param type (not string) raise an error
     def test_wrong_param_type(self):
         cases = [123, [], {}, 1.585, None]
@@ -151,10 +161,13 @@ class TestSettings(unittest.TestCase):
     # Given a string with wrong filename param raise a FileNotFoundError
     def test_wrong_filename(self):
         self.assertIsInstance(settings.read_json(''), FileNotFoundError)
-    
+
     # Given a right param but settings.json file contains errors raise an error
     def test_wrong_sintax_json(self):
-        self.assertIsInstance(settings.read_json('bad_syntax_file.json'), json.decoder.JSONDecodeError)
+        self.assertIsInstance(
+                            settings.read_json('bad_syntax_file.json'),
+                            json.decoder.JSONDecodeError
+                            )
 
 
 if __name__ == '__main__':

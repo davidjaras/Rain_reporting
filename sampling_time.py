@@ -20,8 +20,8 @@ def time_to_take_sample(sampletime=5,
     '''
     if sampletime <= 0 or sampletime > 59:
         # here may be a warning notice. Out of range
-        sampletime = 5 # Five is a unchangeable default value
-    
+        sampletime = 5  # Five is a unchangeable default value
+
     if sampletime_unit.lower() == 'seconds':
         step_time = now.second
     elif sampletime_unit.lower() == 'minutes':
@@ -48,12 +48,15 @@ def calibrate_minute():
         time.sleep(1)
 
 
-def delay_to_take_sample(sampletime, sampletime_unit):
+def delay_to_take_sample(sampletime=5, sampletime_unit='minutes'):
     '''
     Sets the delay to validate if it is time to take a sample
     '''
     take_sample = False
     sampletime_unit = sampletime_unit.lower()
+
+    if sampletime_unit not in ['seconds', 'minutes']:
+        sampletime_unit = 'minutes'
 
     while not take_sample:
         if sampletime_unit == 'seconds':
