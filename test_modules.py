@@ -39,12 +39,6 @@ class TestPulsedSensor(unittest.TestCase):
     def test_get_current_time(self):
         self.assertIsInstance(pulsed_sensor.get_current_time(), str)
 
-    '''
-    Following methods are test cases to the function get_current_time()
-    '''
-    def test_get_current_time(self):
-        self.assertIsInstance(pulsed_sensor.get_current_time(), str)
-
 
 class TestSamplingTime(unittest.TestCase):
     '''
@@ -54,17 +48,15 @@ class TestSamplingTime(unittest.TestCase):
     '''
     Following methods are test cases to the function time_to_take_sample()
     '''
-    # Given zero params,
-    # set default values: sampletime = 5; sampletime_unit='minutes';
-    # Must return datetime object and a boolean
+    # Given zero params, set default values, must return datetime object
+    # and a boolean
     def test_zero_params(self):
         datetime_object, boolean = sampling_time.time_to_take_sample()
         self.assertIsInstance(datetime_object, datetime.datetime)
         self.assertIsInstance(boolean, bool)
 
-    # Given sampletime_unit different of minutes or seconds,
-    # set default value: sampletime_unit = 'minutes';
-    # Must return datetime object and a boolean
+    # Given sampletime_unit different of minutes or seconds, set default value
+    # must return datetime object and a boolean
     def test_wrong_sampletime_unit(self):
         datetime_object, boolean = (
             sampling_time.time_to_take_sample(sampletime_unit='random_word')
@@ -72,9 +64,8 @@ class TestSamplingTime(unittest.TestCase):
         self.assertIsInstance(datetime_object, datetime.datetime)
         self.assertIsInstance(boolean, bool)
 
-    # Given sampletime out of the range 1 to 59,
-    # set default value: sampletime = 5;
-    # Must return datetime object and a boolean
+    # Given sampletime out of the range 1 to 59, set default value
+    # must return datetime object and a boolean
     def test_wrong_sampletime_range(self):
         max_int = sys.maxsize
         cases = [0, random.randint(60, max_int), -random.randint(1, max_int)]
@@ -85,9 +76,8 @@ class TestSamplingTime(unittest.TestCase):
             self.assertIsInstance(datetime_object, datetime.datetime)
             self.assertIsInstance(boolean, bool)
 
-    # Given correct sampletime, sampletime_unit,
-    # And these matches with a current time
-    # Must return datetime object and a True boolean
+    # Given correct sampletime, sampletime_unit, and these matches with a
+    # current time must return datetime object and a True boolean
     def test_return_true(self):
         cases = ['seconds', 'minutes']
         for case in cases:
@@ -112,9 +102,8 @@ class TestSamplingTime(unittest.TestCase):
             self.assertIsInstance(boolean, bool)
             self.assertTrue(boolean)
 
-    # Given correct sampletime, sampletime_unit,
-    # And these doesn't matches with a current time
-    # Must return datetime object and a False boolean
+    # Given correct sampletime, sampletime_unit, and these doesn't matches
+    # with a current time must return datetime object and a False boolean
     def test_return_false(self):
         cases = ['seconds', 'minutes']
         for case in cases:
@@ -138,6 +127,60 @@ class TestSamplingTime(unittest.TestCase):
             self.assertIsInstance(datetime_object, datetime.datetime)
             self.assertIsInstance(boolean, bool)
             self.assertFalse(boolean)
+
+    '''
+    Following methods are test cases to the function calibrate_minute()
+    '''
+    # Given a time with second equal to zero must return True
+    def test_calibrate_minute_at_second_zero(self):
+        now = datetime.datetime.now()
+        test_time = datetime.datetime(
+                                    year=now.year,
+                                    month=now.month,
+                                    day=now.day
+                                    )
+        self.assertTrue(sampling_time.calibrate_minute(test_time))
+
+    # Given a current time wait until second is equal to zero must return True
+    def test_calibrate_minute(self):
+        self.assertTrue(sampling_time.calibrate_minute())
+
+    # Given objects that are not instances of datetime.datetime set default
+    # value to datetime.now() must return True
+    def test_calibrate_minute_wrong_param(self):
+        cases = [123, [], {}, 1.585, None]
+        for case in cases:
+            self.assertTrue(sampling_time.calibrate_minute(case))
+
+    '''
+    Following methods are test cases to the function delay_to_take_sample()
+    '''
+    # Given zero params sets default params must return a datetime.datetime
+    # instance
+    def test_delay_sample_zero_params(self):
+        self.assertIsInstance(
+                            sampling_time.delay_to_take_sample(),
+                            datetime.datetime
+                            )
+
+    # Given sampletime_unit different of minutes or seconds, set default
+    # value, must return datetime object and a boolean
+    def test_delay_sample_wrong_sampletime_unit(self):
+        datetime_object = (
+            sampling_time.delay_to_take_sample(sampletime_unit='random_word')
+        )
+        self.assertIsInstance(datetime_object, datetime.datetime)
+
+    # Given sampletime out of the range 1 to 59 (min or sec), set default
+    # value must return datetime object and a boolean
+    def test_delay_sample_wrong_sampletime_range(self):
+        max_int = sys.maxsize
+        cases = [0, random.randint(60, max_int), -random.randint(1, max_int)]
+        for case in cases:
+            datetime_object = (
+                sampling_time.delay_to_take_sample(sampletime=case)
+                )
+            self.assertIsInstance(datetime_object, datetime.datetime)
 
 
 class TestSettings(unittest.TestCase):
