@@ -4,12 +4,16 @@ sampling_time.py
 File with functions that watch time to sampling pulses
 '''
 
-from datetime import datetime
+# Python Core Libraries
+from datetime import datetime, timedelta
 import time
 
+# Project modules
+import settings as S
 
-def time_to_take_sample(sampletime=5,
-                        sampletime_unit='minutes',
+
+def time_to_take_sample(sampletime=S.DEFAULT_SAMPLETIME,
+                        sampletime_unit=S.DEFAULT_SAMPLETIME_UNIT,
                         now=datetime.now()):
     '''
     Depending of sampletime and its unit
@@ -18,13 +22,13 @@ def time_to_take_sample(sampletime=5,
     Default values in params are unchangeable by settings or user
     interactions.
     '''
-    if sampletime <= 0 or sampletime > 59:
+    if sampletime not in S.VALID_SECOND_OR_MINUTE:
         # here may be a warning notice. Out of range
-        sampletime = 5  # Five is a unchangeable default value
+        sampletime = S.DEFAULT_SAMPLETIME
 
-    if sampletime_unit.lower() == 'seconds':
+    if sampletime_unit.lower() == S.TIME_UNITS.get('SECONDS'):
         step_time = now.second
-    elif sampletime_unit.lower() == 'minutes':
+    elif sampletime_unit.lower() == S.TIME_UNITS.get('MINUTES'):
         step_time = now.minute
     else:
         # here may be a warning notice code
@@ -36,38 +40,47 @@ def time_to_take_sample(sampletime=5,
     return now, False
 
 
-def calibrate_minute():
+def calibrate_minute(now=datetime.now()):
     '''
     Sets the time step when it is on the minute scale to step every
     time the sencods are zero
     '''
-    while True:
+    if not isinstance(now, datetime):
         now = datetime.now()
-        if now.second == 0:
-            break
-        time.sleep(1)
+
+    second = now.second
+    if second == 0:
+        return True
+    wait_to_second_zero = 60 - second
+    time.sleep(wait_to_second_zero)
+    return True
 
 
-def delay_to_take_sample(sampletime=5, sampletime_unit='minutes'):
+def delay_to_take_sample(sampletime=S.DEFAULT_SAMPLETIME,
+                         sampletime_unit=S.DEFAULT_SAMPLETIME_UNIT):
     '''
     Sets the delay to validate if it is time to take a sample
     '''
     take_sample = False
     sampletime_unit = sampletime_unit.lower()
 
-    if sampletime_unit not in ['seconds', 'minutes']:
-        sampletime_unit = 'minutes'
+    if sampletime not in S.VALID_SECOND_OR_MINUTE:
+        # here may be a warning notice. Out of range
+        sampletime = S.DEFAULT_SAMPLETIME
+
+    if sampletime_unit not in S.TIME_UNITS.values():
+        sampletime_unit = S.DEFAULT_SAMPLETIME_UNIT
+
+    if sampletime_unit == S.TIME_UNITS.get('SECONDS'):
+        wait = S.WAIT.get('SECOND')
+    if sampletime_unit == S.TIME_UNITS.get('MINUTES'):
+        calibrate_minute()
+        wait = S.WAIT.get('MINUTE')
 
     while not take_sample:
-        if sampletime_unit == 'seconds':
-            wait = 1
-        if sampletime_unit == 'minutes':
-            calibrate_minute()
-            wait = 60
-
         time.sleep(wait)
         now, take_sample = (
-            time_to_take_sample(sampletime, sampletime_unit)
+            time_to_take_sample(sampletime, sampletime_unit, datetime.now())
         )
     return now
 
